@@ -78,35 +78,35 @@ This repository contains two independently deployable applications - `server/` a
 
 **Component responsibilities**
 
-| Component                       | Responsibility                                                                                                                                                                                                                                                                                               |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Electron Client**       | Renders the lobby and game board, opens and maintains a single WebSocket connection to the server, and drives reconnection/session-recovery logic on the client side.                                                                                                                                        |
-| **WebSocket Gateway**     | Terminates client WebSocket connections, authenticates/registers participants, and multiplexes inbound/outbound messages to the appropriate internal subsystem.                                                                                                                                              |
-| **Matchmaking**           | Pairs two participants into a session via a direct invitation from one to the other. There is no automatic matchmaking queue; a participant can only start a game by inviting (or being invited by) someone.                                                                                               |
-| **Session Manager**       | Owns the lifecycle of an active game session, creation, heartbeat tracking, pause on disconnect, and recovery on reconnect.                                                                                                                                                                                |
-| **Game Engine**           | Validates and applies moves, enforces turn order, and detects win/draw conditions for each session.                                                                                                                                                                                                          |
-| **PostgreSQL**            | Durable system of record for participants, completed sessions, move history, and invitations.                                                                                                                                                                                                                |
+| Component                       | Responsibility                                                                                                                                                                                                                                                                                                       |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Electron Client**       | Renders the lobby and game board, opens and maintains a single WebSocket connection to the server, and drives reconnection/session-recovery logic on the client side.                                                                                                                                                |
+| **WebSocket Gateway**     | Terminates client WebSocket connections, authenticates/registers participants, and multiplexes inbound/outbound messages to the appropriate internal subsystem.                                                                                                                                                      |
+| **Matchmaking**           | Pairs two participants into a session via a direct invitation from one to the other. There is no automatic matchmaking queue; a participant can only start a game by inviting (or being invited by) someone.                                                                                                         |
+| **Session Manager**       | Owns the lifecycle of an active game session, creation, heartbeat tracking, pause on disconnect, and recovery on reconnect.                                                                                                                                                                                          |
+| **Game Engine**           | Validates and applies moves, enforces turn order, and detects win/draw conditions for each session.                                                                                                                                                                                                                  |
+| **PostgreSQL**            | Durable system of record for participants, completed sessions, move history, and invitations.                                                                                                                                                                                                                        |
 | **Redis / In-Memory Map** | Transient state, active connections, presence, invitations, and heartbeats. This implementation runs as a single Go process, so it keeps this state in a plain in-memory map; Redis is a drop-in replacement implementing the same interface when the server is horizontally scaled. Never used for durable storage. |
-| **Flyway**                | Applies versioned schema migrations to PostgreSQL automatically on container startup, before the Backend server begins accepting traffic.                                                                                                                                                                    |
-| **Prometheus**            | Scrapes the Backend server's`/metrics` endpoint on a fixed interval and stores time-series metrics.                                                                                                                                                                                                        |
-| **Grafana**               | Visualizes metrics collected by Prometheus across connection, game, and infrastructure dashboards.                                                                                                                                                                                                           |
+| **Flyway**                | Applies versioned schema migrations to PostgreSQL automatically on container startup, before the Backend server begins accepting traffic.                                                                                                                                                                            |
+| **Prometheus**            | Scrapes the Backend server's`/metrics` endpoint on a fixed interval and stores time-series metrics.                                                                                                                                                                                                                |
+| **Grafana**               | Visualizes metrics collected by Prometheus across connection, game, and infrastructure dashboards.                                                                                                                                                                                                                   |
 
 ---
 
 ## Technology Stack
 
-| Technology                                               | Purpose                                                                                                                                   |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Go                                                       | Backend server runtime and language                                                                                                       |
-| [WebSocket protocol](https://github.com/nhooyr/websocket) | WebSocket protocol implementation                                                                                                         |
-| PostgreSQL                                               | Durable persistent storage                                                                                                                |
+| Technology                                               | Purpose                                                                                                                                           |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Go                                                       | Backend server runtime and language                                                                                                               |
+| [WebSocket protocol](https://github.com/nhooyr/websocket) | WebSocket protocol implementation                                                                                                                 |
+| PostgreSQL                                               | Durable persistent storage                                                                                                                        |
 | Redis / in-memory map                                    | Active sessions, presence, and invitations; an in-memory map in this single-instance implementation, swappable for Redis when horizontally scaled |
-| Flyway                                                   | Database schema migrations                                                                                                                |
-| Prometheus                                               | Metrics collection                                                                                                                        |
-| Grafana                                                  | Metrics dashboards and visualization                                                                                                      |
-| Docker                                                   | Containerization of all services                                                                                                          |
-| Docker Compose                                           | Local multi-service orchestration                                                                                                         |
-| Electron                                                 | Desktop application runtime                                                                                                               |
+| Flyway                                                   | Database schema migrations                                                                                                                        |
+| Prometheus                                               | Metrics collection                                                                                                                                |
+| Grafana                                                  | Metrics dashboards and visualization                                                                                                              |
+| Docker                                                   | Containerization of all services                                                                                                                  |
+| Docker Compose                                           | Local multi-service orchestration                                                                                                                 |
+| Electron                                                 | Desktop application runtime                                                                                                                       |
 
 ---
 
@@ -179,8 +179,6 @@ migrations/
 ├── V1__initial_schema.sql
 ├── V2__create_sessions.sql
 ├── V3__create_moves.sql
-├── V4__leaderboard.sql
-└── V5__drop_leaderboard.sql
 ```
 
 Migrations are an append-only log, once applied, a file is never edited or deleted, since Flyway validates already-applied migrations by checksum. `V4` is a good example: the leaderboard feature it introduced was later removed, but rather than rewriting or deleting `V4`, `V5` was added to drop what it created.
@@ -409,17 +407,17 @@ project/
 
 ### Server Configuration
 
-| Variable              | Purpose                                                                                                          |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `POSTGRES_HOST`     | PostgreSQL host                                                                                                  |
-| `POSTGRES_PORT`     | PostgreSQL port                                                                                                  |
-| `POSTGRES_USER`     | PostgreSQL username                                                                                              |
-| `POSTGRES_PASSWORD` | PostgreSQL password                                                                                              |
-| `POSTGRES_DATABASE` | PostgreSQL database name                                                                                         |
+| Variable              | Purpose                                                                                                        |
+| --------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `POSTGRES_HOST`     | PostgreSQL host                                                                                                |
+| `POSTGRES_PORT`     | PostgreSQL port                                                                                                |
+| `POSTGRES_USER`     | PostgreSQL username                                                                                            |
+| `POSTGRES_PASSWORD` | PostgreSQL password                                                                                            |
+| `POSTGRES_DATABASE` | PostgreSQL database name                                                                                       |
 | `REDIS_HOST`        | Redis host (optional, only used when running with the Redis-backed store instead of the default in-memory map) |
 | `REDIS_PORT`        | Redis port (optional, see`REDIS_HOST`)                                                                       |
-| `LOG_LEVEL`         | Minimum log level (`debug`, `info`, `warn`, `error`)                                                     |
-| `SERVER_PORT`       | Port the Backend server listens on                                                                               |
+| `LOG_LEVEL`         | Minimum log level (`debug`, `info`, `warn`, `error`)                                                   |
+| `SERVER_PORT`       | Port the Backend server listens on                                                                             |
 
 ---
 
@@ -484,12 +482,14 @@ yarn run dist:win
 - Connected users
 - Reconnection rate
 - Connection failures
+- ![1785624402540](image/README/1785624402540.png)
 
 ### Game Dashboard
 
 - Active games
 - Completed games
 - Average game duration
+- ![1785624476862](image/README/1785624476862.png)
 
 ### Performance Dashboard
 
@@ -499,6 +499,7 @@ yarn run dist:win
 - Database query latency
 - State store latency (in-memory map / Redis)
 - WebSocket message latency
+- ![1785624342910](image/README/1785624342910.png)
 
 ---
 
