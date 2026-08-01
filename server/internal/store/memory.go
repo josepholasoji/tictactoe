@@ -7,8 +7,6 @@ import (
 	"github.com/oyewunmi/tictactoe/internal/domain"
 )
 
-// MemoryStore is the default Store implementation: a plain in-memory map
-// guarded by a mutex, sufficient for this implementation's single-instance server.
 type MemoryStore struct {
 	mu sync.RWMutex
 
