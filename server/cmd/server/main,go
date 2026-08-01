@@ -7,15 +7,29 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"honnef.co/go/tools/config"
 )
 
-func connectWith(ctx context.Context, dsn string) (*db.Repository, error) {
-	repo, err := db.Connect(ctx, dsn)
-	if err == nil {
-		return repo, nil
+// connectWithRetry will continue to retry until Postgres is ready, or until the context is canceled.
+func connectWithRetry(ctx context.Context, dsn string, log *slog.Logger) (*db.Repository, error) {
+	const maxAttempts = 15
+	var lastErr error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		repo, err := db.Connect(ctx, dsn)
+		if err == nil {
+			return repo, nil
+		}
+		lastErr = err
+		log.Warn("postgres not ready, retrying", "attempt", attempt, "max_attempts", maxAttempts, "error", err)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(2 * time.Second):
+		}
 	}
+	return nil, lastErr
 }
 
 func main() {
@@ -27,7 +41,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	repo, err := connectWith(ctx, cfg.PostgresDSN())
+	repo, err := connectWithRetry(ctx, cfg.PostgresDSN(), log)
 	if err != nil {
 		log.Error("failed to connect to postgres", "error", err)
 		os.Exit(1)
