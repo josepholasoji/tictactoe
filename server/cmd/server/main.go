@@ -9,8 +9,18 @@ import (
 	"syscall"
 	"time"
 
-	"honnef.co/go/tools/config"
+	"github.com/oyewunmi/tictactoe/internal/config"
+	"github.com/oyewunmi/tictactoe/internal/db"
+	"github.com/oyewunmi/tictactoe/internal/hub"
+	"github.com/oyewunmi/tictactoe/internal/logging"
+	"github.com/oyewunmi/tictactoe/internal/matchmaking"
+	"github.com/oyewunmi/tictactoe/internal/metrics"
+	"github.com/oyewunmi/tictactoe/internal/session"
+	"github.com/oyewunmi/tictactoe/internal/store"
+	"github.com/oyewunmi/tictactoe/internal/ws"
 )
+
+const heartbeatSweepInterval = 10 * time.Second
 
 // connectWithRetry will continue to retry until Postgres is ready, or until the context is canceled.
 func connectWithRetry(ctx context.Context, dsn string, log *slog.Logger) (*db.Repository, error) {
@@ -38,6 +48,19 @@ func handleHealth(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("ok"))
 }
 
+func runHeartbeatSweep(ctx context.Context, gateway *ws.Gateway) {
+	ticker := time.NewTicker(heartbeatSweepInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			gateway.SweepStaleConnections()
+		}
+	}
+}
+
 func main() {
 	cfg := config.Load()
 	log := logging.New(cfg.LogLevel)
@@ -54,15 +77,25 @@ func main() {
 	}
 	defer repo.Close()
 
+	memStore := store.NewMemoryStore()
+	connHub := hub.New()
+	sessions := session.NewManager(memStore, connHub, repo, log)
+	mm := matchmaking.NewService(memStore, connHub, sessions, log)
+	gateway := ws.NewGateway(connHub, memStore, mm, sessions, repo, log)
+
 	// start web/websocket server
 	mux := http.NewServeMux()
+	mux.HandleFunc("/ws", gateway.HandleWS)
 	mux.HandleFunc("/healthz", handleHealth)
+	mux.Handle("/metrics", metrics.Handler())
 
 	httpServer := &http.Server{
 		Addr:              ":" + cfg.ServerPort,
 		Handler:           mux,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
+
+	go runHeartbeatSweep(ctx, gateway)
 
 	go func() {
 		log.Info("server listening", "port", cfg.ServerPort)

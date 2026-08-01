@@ -1,0 +1,53 @@
+{
+  "uid": "tictactoe-connections",
+  "title": "Connections",
+  "tags": ["tictactoe"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Active Clients",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [{ "expr": "tictactoe_active_connections", "refId": "A" }]
+    },
+    {
+      "id": 2,
+      "title": "Connections Total",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [{ "expr": "rate(tictactoe_connections_total[5m])", "refId": "A", "legendFormat": "connections/s" }]
+    },
+    {
+      "id": 3,
+      "title": "Reconnection Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [{ "expr": "rate(tictactoe_reconnects_total[5m])", "refId": "A", "legendFormat": "reconnects/s" }]
+    },
+    {
+      "id": 4,
+      "title": "Total Clients Connected",
+      "type": "stat",
+      "description": "Cumulative WebSocket connections accepted since the server started (all-time total, not currently-online count).",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [{ "expr": "tictactoe_connections_total", "refId": "A" }]
+    },
+    {
+      "id": 5,
+      "title": "Rate of Connections Lost",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [{ "expr": "rate(tictactoe_disconnects_total[5m])", "refId": "A", "legendFormat": "disconnects/s" }]
+    }
+  ]
+}

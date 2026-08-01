@@ -86,7 +86,7 @@ This repository contains two independently deployable applications - `server/` a
 | **Session Manager**       | Owns the lifecycle of an active game session, creation, heartbeat tracking, pause on disconnect, and recovery on reconnect.                                                                                                                                                                                |
 | **Game Engine**           | Validates and applies moves, enforces turn order, and detects win/draw conditions for each session.                                                                                                                                                                                                          |
 | **PostgreSQL**            | Durable system of record for participants, completed sessions, move history, and invitations.                                                                                                                                                                                                                |
-| **Redis / In-Memory Map** | Transient state, active connections, presence, invitations, and heartbeats. This demo runs as a single Go process, so it keeps this state in a plain in-memory map; Redis is a drop-in replacement implementing the same interface when the server is horizontally scaled. Never used for durable storage. |
+| **Redis / In-Memory Map** | Transient state, active connections, presence, invitations, and heartbeats. This implementation runs as a single Go process, so it keeps this state in a plain in-memory map; Redis is a drop-in replacement implementing the same interface when the server is horizontally scaled. Never used for durable storage. |
 | **Flyway**                | Applies versioned schema migrations to PostgreSQL automatically on container startup, before the Backend server begins accepting traffic.                                                                                                                                                                    |
 | **Prometheus**            | Scrapes the Backend server's`/metrics` endpoint on a fixed interval and stores time-series metrics.                                                                                                                                                                                                        |
 | **Grafana**               | Visualizes metrics collected by Prometheus across connection, game, and infrastructure dashboards.                                                                                                                                                                                                           |
@@ -100,7 +100,7 @@ This repository contains two independently deployable applications - `server/` a
 | Go                                                       | Backend server runtime and language                                                                                                       |
 | [WebSocket protocol](https://github.com/nhooyr/websocket) | WebSocket protocol implementation                                                                                                         |
 | PostgreSQL                                               | Durable persistent storage                                                                                                                |
-| Redis / in-memory map                                    | Active sessions, presence, and invitations; an in-memory map in this single-instance demo, swappable for Redis when horizontally scaled |
+| Redis / in-memory map                                    | Active sessions, presence, and invitations; an in-memory map in this single-instance implementation, swappable for Redis when horizontally scaled |
 | Flyway                                                   | Database schema migrations                                                                                                                |
 | Prometheus                                               | Metrics collection                                                                                                                        |
 | Grafana                                                  | Metrics dashboards and visualization                                                                                                      |
@@ -162,7 +162,7 @@ Durable system of record. Stores:
 
 ### Redis / In-Memory Map
 
-This demo runs as a **single Backend server instance**, so there is no cross-instance state to synchronize. The transient state below lives in a plain in-memory map inside that one process. Redis is the pluggable, production-grade alternative implementing the same interface; swap it in when the server is horizontally scaled across multiple instances and that state needs to be shared. Either way, this store is transient only **not** used for durable storage. Stores:
+This implementation runs as a **single Backend server instance**, so there is no cross-instance state to synchronize. The transient state below lives in a plain in-memory map inside that one process. Redis is the pluggable, production-grade alternative implementing the same interface; swap it in when the server is horizontally scaled across multiple instances and that state needs to be shared. Either way, this store is transient only **not** used for durable storage. Stores:
 
 - Active WebSocket connections
 - Online participant presence
@@ -446,7 +446,7 @@ This starts the full backing stack:
 - Prometheus
 - Grafana
 
-This demo runs a single Backend server instance, so it keeps active connections, presence, and pending invitations in an in-memory map, no Redis container is required. A `redis` service can be added to `docker-compose.yml` and pointed to via `REDIS_HOST`/`REDIS_PORT` if the server is horizontally scaled and that state needs to be shared across instances.
+This implementation runs a single Backend server instance, so it keeps active connections, presence, and pending invitations in an in-memory map, no Redis container is required. A `redis` service can be added to `docker-compose.yml` and pointed to via `REDIS_HOST`/`REDIS_PORT` if the server is horizontally scaled and that state needs to be shared across instances.
 
 ### Run Client
 
@@ -562,7 +562,7 @@ npm run lint
 
 ## Production Recommendations
 
-This repository is set up as a local demo. A few things are worth calling out explicitly before running any of this in production.
+This repository is set up as a local implementation. A few things are worth calling out explicitly before running any of this in production.
 
 ### Logging
 
