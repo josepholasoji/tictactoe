@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -32,6 +32,12 @@ func connectWithRetry(ctx context.Context, dsn string, log *slog.Logger) (*db.Re
 	return nil, lastErr
 }
 
+// handleHealth is a simple health check endpoint that returns 200 OK.
+func handleHealth(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("ok"))
+}
+
 func main() {
 	cfg := config.Load()
 	log := logging.New(cfg.LogLevel)
@@ -47,5 +53,31 @@ func main() {
 		os.Exit(1)
 	}
 	defer repo.Close()
-	fmt.Println("Hello, Tic Tac Toe!")
+
+	// start web/websocket server
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", handleHealth)
+
+	httpServer := &http.Server{
+		Addr:              ":" + cfg.ServerPort,
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+
+	go func() {
+		log.Info("server listening", "port", cfg.ServerPort)
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Error("server failed", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	<-ctx.Done()
+	log.Info("shutting down")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := httpServer.Shutdown(shutdownCtx); err != nil {
+		log.Error("graceful shutdown failed", "error", err)
+	}
 }
