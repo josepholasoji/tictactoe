@@ -4,6 +4,8 @@ A distributed, real-time multiplayer Tic-Tac-Toe platform built around a Go back
 
 This repository contains two independently deployable applications - `server/` and `client/`, plus the infrastructure required to run the full stack locally with Docker Compose.
 
+NB: This implementation is for a Backend software engineering. The `client` implementation is added to allow for functional testing of the backend service.
+
 ---
 
 ## Table of Contents
