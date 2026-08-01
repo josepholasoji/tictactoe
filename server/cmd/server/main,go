@@ -2,11 +2,15 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 
 	"honnef.co/go/tools/config"
 )
 
 func main() {
 	cfg := config.Load()
+	log := logging.New(cfg.LogLevel)
+	slog.SetDefault(log)
+
 	fmt.Println("Hello, Tic Tac Toe!")
 }
