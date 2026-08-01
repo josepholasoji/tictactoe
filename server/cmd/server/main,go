@@ -46,5 +46,6 @@ func main() {
 		log.Error("failed to connect to postgres", "error", err)
 		os.Exit(1)
 	}
+	defer repo.Close()
 	fmt.Println("Hello, Tic Tac Toe!")
 }
