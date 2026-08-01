@@ -25,6 +25,23 @@ func NewBoard() Board {
 	return Board{}
 }
 
+var winningLines = [8][3]int{
+	{0, 1, 2}, {3, 4, 5}, {6, 7, 8}, // rows
+	{0, 3, 6}, {1, 4, 7}, {2, 5, 8}, // columns
+	{0, 4, 8}, {2, 4, 6}, // diagonals
+}
+
+// Winner returns the winning mark and true if the board has three in a row.
+func Winner(b Board) (string, bool) {
+	for _, line := range winningLines {
+		a, x, y := b[line[0]], b[line[1]], b[line[2]]
+		if a != Empty && a == x && a == y {
+			return a, true
+		}
+	}
+	return Empty, false
+}
+
 // ApplyMove returns a new board with mark placed at position.
 func ApplyMove(b Board, position int, mark string) (Board, error) {
 	if position < 0 || position > 8 {
