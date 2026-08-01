@@ -57,6 +57,9 @@ func Encode(msgType string, payload any) ([]byte, error) {
 	return json.Marshal(Envelope{Type: msgType, Payload: raw})
 }
 
+// In a real system, this implementation would have a separate dto folder with
+// each of these types in its own file, and a mapping layer to convert between
+// the wire protocol (internal/protocol) and the storage backend (internal/store).
 // --- DTOs -------------------------------------------------------------
 
 type ParticipantDTO struct {
