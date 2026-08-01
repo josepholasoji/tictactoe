@@ -17,6 +17,7 @@ import (
 	"github.com/oyewunmi/tictactoe/internal/game"
 	"github.com/oyewunmi/tictactoe/internal/hub"
 	"github.com/oyewunmi/tictactoe/internal/matchmaking"
+	"github.com/oyewunmi/tictactoe/internal/metrics"
 	"github.com/oyewunmi/tictactoe/internal/protocol"
 	"github.com/oyewunmi/tictactoe/internal/session"
 	"github.com/oyewunmi/tictactoe/internal/store"
@@ -61,6 +62,13 @@ func (g *Gateway) HandleWS(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+
+	metrics.ConnectionsTotal.Inc()
+	if reconnected {
+		metrics.ReconnectsTotal.Inc()
+	}
+	metrics.ActiveConnections.Inc()
+	defer metrics.ActiveConnections.Dec()
 
 	client := g.hub.Register(participant.ID, participant.Username, conn)
 	pumpCtx, cancelPump := context.WithCancel(context.Background())
@@ -152,6 +160,9 @@ func (g *Gateway) readLoop(ctx context.Context, c *hub.Client, p domain.Particip
 }
 
 func (g *Gateway) dispatch(ctx context.Context, c *hub.Client, p domain.Participant, env protocol.Envelope) {
+	start := time.Now()
+	defer func() { metrics.WSMessageLatencySeconds.Observe(time.Since(start).Seconds()) }()
+
 	switch env.Type {
 	case protocol.TypeHeartbeat:
 		g.store.Heartbeat(p.ID, time.Now())
@@ -199,6 +210,8 @@ func (g *Gateway) handleInviteRespond(ctx context.Context, c *hub.Client, p doma
 		return
 	}
 	if sess != nil {
+		metrics.GamesStartedTotal.Inc()
+		metrics.ActiveGames.Inc()
 		dto := g.sessions.ToDTO(sess)
 		g.broadcastToParticipants(sess, protocol.TypeGameStarted, protocol.GameStartedPayload{Session: dto})
 		g.announceAvailability(sess, false)
@@ -218,8 +231,15 @@ func (g *Gateway) handleMove(ctx context.Context, c *hub.Client, p domain.Partic
 		g.sendError(c, sessionErrorCode(err), err.Error())
 		return
 	}
+	metrics.MovesTotal.Inc()
 	dto := g.sessions.ToDTO(sess)
 	if completed {
+		metrics.ActiveGames.Dec()
+		outcome := "win"
+		if sess.IsDraw {
+			outcome = "draw"
+		}
+		metrics.GamesCompletedTotal.WithLabelValues(outcome).Inc()
 		g.broadcastToParticipants(sess, protocol.TypeGameCompleted, protocol.GameCompletedPayload{Session: dto})
 		g.announceAvailability(sess, true)
 	} else {
@@ -233,6 +253,7 @@ func (g *Gateway) handleDisconnect(c *hub.Client, p domain.Participant) {
 	}
 	g.store.SetOffline(p.ID)
 	g.broadcastPresence(p, false)
+	metrics.DisconnectsTotal.Inc()
 	g.log.Info("participant disconnected", "participant_id", p.ID, "username", p.Username)
 }
 

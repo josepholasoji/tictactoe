@@ -5,9 +5,11 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/oyewunmi/tictactoe/internal/domain"
+	"github.com/oyewunmi/tictactoe/internal/metrics"
 )
 
 type Repository struct {
@@ -31,6 +33,7 @@ func (r *Repository) Close() {
 }
 
 func (r *Repository) UpsertParticipant(ctx context.Context, p domain.Participant) error {
+	defer observe("upsert_participant", time.Now())
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO participants (id, username, created_at)
 		VALUES ($1, $2, now())
@@ -40,6 +43,7 @@ func (r *Repository) UpsertParticipant(ctx context.Context, p domain.Participant
 }
 
 func (r *Repository) InsertSession(ctx context.Context, s *domain.Session) error {
+	defer observe("insert_session", time.Now())
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO sessions (id, participant_x_id, participant_o_id, status, started_at)
 		VALUES ($1, $2, $3, $4, $5)
@@ -48,6 +52,7 @@ func (r *Repository) InsertSession(ctx context.Context, s *domain.Session) error
 }
 
 func (r *Repository) InsertMove(ctx context.Context, mv *domain.Move) error {
+	defer observe("insert_move", time.Now())
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO moves (id, session_id, participant_id, position, move_number, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -56,9 +61,14 @@ func (r *Repository) InsertMove(ctx context.Context, mv *domain.Move) error {
 }
 
 func (r *Repository) CompleteSession(ctx context.Context, s *domain.Session) error {
+	defer observe("complete_session", time.Now())
 	_, err := r.pool.Exec(ctx, `
 		UPDATE sessions SET status = $2, winner_id = $3, completed_at = $4
 		WHERE id = $1
 	`, s.ID, string(s.Status), s.WinnerID, s.CompletedAt)
 	return err
+}
+
+func observe(operation string, start time.Time) {
+	metrics.DatabaseLatencySeconds.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 }

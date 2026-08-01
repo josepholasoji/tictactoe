@@ -1,0 +1,55 @@
+{
+  "uid": "tictactoe-games",
+  "title": "Games",
+  "tags": ["tictactoe"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Active Games",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [{ "expr": "tictactoe_active_games", "refId": "A" }]
+    },
+    {
+      "id": 2,
+      "title": "Games Completed (by outcome)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        { "expr": "rate(tictactoe_games_completed_total[5m])", "refId": "A", "legendFormat": "{{outcome}}/s" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Moves Total",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [{ "expr": "rate(tictactoe_moves_total[5m])", "refId": "A", "legendFormat": "moves/s" }]
+    },
+    {
+      "id": 4,
+      "title": "Games Started Total",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [{ "expr": "rate(tictactoe_games_started_total[5m])", "refId": "A", "legendFormat": "games started/s" }]
+    },
+    {
+      "id": 5,
+      "title": "Total Games Played",
+      "type": "stat",
+      "description": "Cumulative completed games (wins + draws) since the server started.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [{ "expr": "sum(tictactoe_games_completed_total)", "refId": "A" }]
+    }
+  ]
+}

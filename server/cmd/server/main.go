@@ -14,6 +14,7 @@ import (
 	"github.com/oyewunmi/tictactoe/internal/hub"
 	"github.com/oyewunmi/tictactoe/internal/logging"
 	"github.com/oyewunmi/tictactoe/internal/matchmaking"
+	"github.com/oyewunmi/tictactoe/internal/metrics"
 	"github.com/oyewunmi/tictactoe/internal/session"
 	"github.com/oyewunmi/tictactoe/internal/store"
 	"github.com/oyewunmi/tictactoe/internal/ws"
@@ -86,6 +87,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", gateway.HandleWS)
 	mux.HandleFunc("/healthz", handleHealth)
+	mux.Handle("/metrics", metrics.Handler())
 
 	httpServer := &http.Server{
 		Addr:              ":" + cfg.ServerPort,

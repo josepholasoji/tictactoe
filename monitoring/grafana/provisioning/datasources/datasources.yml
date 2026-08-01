@@ -1,0 +1,16 @@
+apiVersion: 1
+
+# Datasource provisioning is additive by default - Grafana won't remove a
+# previously-provisioned datasource just because it's gone from this file,
+# so removing Loki has to be explicit.
+deleteDatasources:
+  - name: Loki
+    orgId: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
